@@ -1,0 +1,4 @@
+/target
+/msvc
+/gnu-mingw
+*.dll
