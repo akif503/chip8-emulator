@@ -26,3 +26,55 @@ fn main() {
     emulator.read_rom(&mut program);
     emulator.run();
 }
+
+impl Emulator {
+    fn run(&mut self) {
+        let mut instructions: Vec<u16> = Vec::new();
+
+        // Convert to opcodes
+        for idx in (0..(self.program_size - 1)).step_by(2) {
+            let b1: u8 = self.read(self.PROGRAM_START + idx);
+            let b2: u8 = self.read(self.program_size + idx + 1);
+
+            let opcode = (b1 as u16) << 8 | b2 as u16;
+
+            instructions.push(opcode);
+        }            
+
+        self.running = true;
+        self.cpu.PC = self.PROGRAM_START as u16;
+
+        while self.running {
+            // Handle Events
+            for event in self.event_pump.poll_iter() {
+                match event {
+                    Event::Quit {..} |
+                    Event::KeyDown { keycode: Some(Keycode::Escape), .. } => {
+                        self.running = false;
+                    },
+                    _ => {}
+                }
+            }
+
+            // Reference: https://tobiasvl.github.io/blog/write-a-chip-8-emulator/
+            
+            // Fetch
+            let pc: usize = self.cpu.PC as usize;
+            let opcode = self.convert_to_opcode(self.read(pc), self.read(pc + 1));
+            self.cpu.PC = (self.cpu.PC + 2) % ((self.memory.len() - 1) as u16);
+
+            print!("Execute [{:#x}]: ", opcode);
+
+            // Decode & Execute
+            self.execute(opcode);
+
+            // Render Canvas
+            self.screen.render();
+
+            if self.cpu.timer.DT != 0 {
+                self.cpu.timer.DT -= 1;
+            }
+
+            ::std::thread::sleep(Duration::new(0, 1_000_000_000u32 / 60));
+        }
+}

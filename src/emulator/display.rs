@@ -109,7 +109,7 @@ impl Display {
 
                 // XOR the pixels
                 self.pixel_repr[pos_y as usize][pos_x as usize] = cur ^ sprite_pixel;
-                //self.pixel_repr[pos_y as usize][pos_x as usize] = sprite_pixel; 
+                // self.pixel_repr[pos_y as usize][pos_x as usize] = sprite_pixel; 
 
                 if collision == 0 {
                     if cur != self.pixel_repr[pos_y as usize][pos_x as usize] {
