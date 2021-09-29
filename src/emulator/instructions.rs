@@ -8,7 +8,7 @@ fn hex_to_int(hex_str: &str) -> u16 {
 }
 
 impl Emulator {
-    pub fn execute(&mut self, opcode: u16) {
+    pub fn execute(&mut self, opcode: u16, key_event_triggered: Vec<Event>) {
         // This will be an array of bytes
         let temp = format!("{:#06x}", opcode);
         let opcode_str = temp.strip_prefix("0x").unwrap();
@@ -146,7 +146,7 @@ impl Emulator {
                         }
                     },
                     "5" => {
-                        // SUB Vx, Vy, carry
+                        // SUBN Vx, Vy, carry
                         println!("SUB {:#x} {:#x}", vx, vy);
                         if vx > vy {
                             self.cpu.registers[vf_addr] = 1;
@@ -260,11 +260,12 @@ impl Emulator {
                         println!("SKP {:#x}", vx);
 
                         let desired_key = self.get_mapped_key(vx);
-                        for event in self.event_pump.poll_iter() {
+                        println!("keys: {}", desired_key);
+                        for event in key_event_triggered.iter() {
                             match event {
                                 Event::KeyDown { keycode: Some(key), ..} => {
-                                    // println!("keys: {} {}", desired_key, key);
-                                    if desired_key == key {
+                                    println!("keys: {} {}", desired_key, key);
+                                    if desired_key == *key {
                                         self.cpu.PC += 2;
                                     }
                                 },
@@ -275,18 +276,18 @@ impl Emulator {
                     "A1" | "a1" => {
                         // SKNP Vx
                         println!("SKNP {:#x}", vx);
-                        // let mut event_pump: EventPump = self.screen.get_events();
 
                         let desired_key = self.get_mapped_key(vx);
-                        for event in self.event_pump.poll_iter() {
+                        println!("keys: {}", desired_key);
+                        for event in key_event_triggered.iter() {
                             match event {
                                 Event::KeyDown { keycode: Some(key), ..} => {
-                                    println!("keys: {} {}", desired_key, key);
-                                    if desired_key != key {
+                                    // println!("HURRAH!!");
+                                    if desired_key != *key {
                                         self.cpu.PC += 2;
                                     }
                                 },
-                                _ => {}
+                                _ => {println!("{:#?}", event)}
                             }
                         }
                     },
@@ -381,7 +382,7 @@ impl Emulator {
                         println!("LD {:#x} {:#x}", self.cpu.timer.ST, vx);
                         self.cpu.timer.ST = vx;
                     },
-                    "0e" | "0E" => {
+                    "1e" | "1E" => {
                         // ADD I, Vx
                         println!("Add {:#x} {:#x}", self.cpu.VI, vx);
                         self.cpu.VI += vx as u16;

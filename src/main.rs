@@ -2,6 +2,9 @@ mod emulator;
 
 use std::env;
 use std::fs;
+use sdl2::event::Event;
+use std::time::Duration;
+use sdl2::keyboard::Keycode;
 use emulator::Emulator;
 
 // For simplicity we'll assume width and height are multiples of our final mapping
@@ -44,7 +47,11 @@ impl Emulator {
         self.running = true;
         self.cpu.PC = self.PROGRAM_START as u16;
 
+        let mut count = 0;
+
         while self.running {
+            let mut key_event_triggered: Vec<Event> = Vec::new();
+
             // Handle Events
             for event in self.event_pump.poll_iter() {
                 match event {
@@ -52,12 +59,15 @@ impl Emulator {
                     Event::KeyDown { keycode: Some(Keycode::Escape), .. } => {
                         self.running = false;
                     },
-                    _ => {}
+                    Event::KeyDown {..} => {
+                        //println!("{:#?}", event);
+                        key_event_triggered.push(event);
+                    }
+                    _ => {
+                    }
                 }
             }
 
-            // Reference: https://tobiasvl.github.io/blog/write-a-chip-8-emulator/
-            
             // Fetch
             let pc: usize = self.cpu.PC as usize;
             let opcode = self.convert_to_opcode(self.read(pc), self.read(pc + 1));
@@ -66,15 +76,20 @@ impl Emulator {
             print!("Execute [{:#x}]: ", opcode);
 
             // Decode & Execute
-            self.execute(opcode);
+            self.execute(opcode, key_event_triggered);
 
             // Render Canvas
             self.screen.render();
 
             if self.cpu.timer.DT != 0 {
-                self.cpu.timer.DT -= 1;
+                // count += 1;
+
+                //if count % 30 == 0 {
+                    self.cpu.timer.DT -= 1;
+                // }
             }
 
             ::std::thread::sleep(Duration::new(0, 1_000_000_000u32 / 60));
         }
+    }
 }
